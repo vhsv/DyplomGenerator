@@ -11,7 +11,7 @@ type Phase = 'upload' | 'map' | 'generating' | 'done';
 interface TemplateField { key: string; }
 
 interface ColumnMapping {
-  columnIndex: number | null; // which parsed column maps to this field; null = static value
+  columnIndex: number | null;
   staticValue: string;
 }
 
@@ -71,7 +71,7 @@ export default function App() {
 
   // Bulk input
   const [rawText, setRawText] = useState('');
-  const [hasHeader, setHasHeader] = useState(true);
+  const [hasHeader, setHasHeader] = useState(false);
   const [mappings, setMappings] = useState<Record<string, ColumnMapping>>({});
   const [fileNameField, setFileNameField] = useState<string>(''); // which field to use as filename
 
@@ -200,30 +200,12 @@ export default function App() {
 
       <header className="header">
         <div className="logo">
-          <svg className="logo-icon" width="30" height="30" viewBox="0 0 32 32" fill="none">
-            <rect x="4" y="2" width="18" height="24" rx="2" fill="#1a1a2e" stroke="#4f8ef7" strokeWidth="1.5"/>
-            <rect x="16" y="2" width="6" height="6" rx="1" fill="#4f8ef7" opacity="0.4"/>
-            <line x1="8" y1="12" x2="18" y2="12" stroke="#4f8ef7" strokeWidth="1.5" strokeLinecap="round"/>
-            <line x1="8" y1="16" x2="18" y2="16" stroke="#4f8ef7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-            <line x1="8" y1="20" x2="14" y2="20" stroke="#4f8ef7" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
-            <circle cx="24" cy="24" r="6" fill="#0f0f1a" stroke="#4f8ef7" strokeWidth="1.5"/>
-            <line x1="21" y1="24" x2="27" y2="24" stroke="#4f8ef7" strokeWidth="1.5" strokeLinecap="round"/>
-            <line x1="24" y1="21" x2="24" y2="27" stroke="#4f8ef7" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          <span>DOCX<span className="logo-accent">bulk</span></span>
+          <span>Generator<span className="logo-accent">Dyplomów</span></span>
         </div>
-        <p className="header-sub">Masowe generowanie dokumentów Word · lokalnie, bez serwera</p>
       </header>
 
       <main className="main">
-        {error && (
-          <div className="error-banner">
-            <span>⚠ {error}</span>
-            <button onClick={() => setError(null)}>✕</button>
-          </div>
-        )}
 
-        {/* Steps */}
         <div className="steps-bar">
           {['Wgraj szablon', 'Dane i mapowanie', 'Generuj ZIP'].map((label, i) => (
             <React.Fragment key={i}>
@@ -236,7 +218,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* ── UPLOAD ── */}
         {phase === 'upload' && (
           <div className="phase-panel">
             <div
@@ -244,89 +225,33 @@ export default function App() {
               onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
+              onClick={() => fileInputRef.current?.click()}>
+
               <input ref={fileInputRef} type="file" accept=".docx" onChange={handleFileChange} style={{ display: 'none' }} />
-              <div className="drop-visual">
-                <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                  <path d="M10 36 L28 18 L46 36" stroke="#4f8ef7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="28" y1="18" x2="28" y2="44" stroke="#4f8ef7" strokeWidth="2.5" strokeLinecap="round"/>
-                  <path d="M14 48 H42" stroke="#4f8ef7" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-                </svg>
-              </div>
               <p className="drop-title">Wgraj szablon .docx</p>
               <p className="drop-hint">Przeciągnij lub kliknij · plik z polami <code>{`{imie}`}</code></p>
-            </div>
-
-            <div className="info-panel">
-              <h3 className="info-title">Jak działa masowe generowanie?</h3>
-              <div className="info-steps">
-                <div className="info-step">
-                  <span className="info-num">1</span>
-                  <div>
-                    <strong>Szablon Word z placeholderami</strong>
-                    <p>Utwórz dokument z polami <code>{`{imie}`}</code>, <code>{`{nazwisko}`}</code>, <code>{`{kwota}`}</code> itp.</p>
-                  </div>
-                </div>
-                <div className="info-step">
-                  <span className="info-num">2</span>
-                  <div>
-                    <strong>Wklej dane z Excela / Notatnika</strong>
-                    <p>Skopiuj kolumny i wklej — obsługuje tabulatory, średniki, przecinki</p>
-                  </div>
-                </div>
-                <div className="info-step">
-                  <span className="info-num">3</span>
-                  <div>
-                    <strong>Mapuj kolumny → pola</strong>
-                    <p>Wskaż, która kolumna trafia do którego pola w szablonie</p>
-                  </div>
-                </div>
-                <div className="info-step">
-                  <span className="info-num">4</span>
-                  <div>
-                    <strong>Pobierz ZIP ze wszystkimi plikami</strong>
-                    <p>Każdy wiersz = osobny plik .docx spakowany w archiwum ZIP</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
 
-        {/* ── MAP ── */}
         {phase === 'map' && (
           <div className="phase-panel">
             <div className="file-info-bar">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
               <span className="file-name">{fileName}</span>
               <span className="field-count-badge">{fields.length} pól wykryto</span>
               <button className="btn-back" style={{ marginLeft: 'auto' }} onClick={handleReset}>← Zmień plik</button>
             </div>
 
-            {/* Textarea input */}
             <div className="section-card">
               <div className="section-header">
                 <div>
                   <h2>Dane do wypełnienia</h2>
-                  <p className="section-sub">Wklej z Excela, Notatnika — oddzielone tabulatorem, średnikiem lub przecinkiem</p>
+                  <p className="section-sub">Wklej z Excela, Notatnika — oddzielone tabulatorem lub średnikiem</p>
                 </div>
-                <label className="toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={hasHeader}
-                    onChange={e => setHasHeader(e.target.checked)}
-                  />
-                  <span className="toggle-track"><span className="toggle-thumb" /></span>
-                  <span>Pierwszy wiersz to nagłówki</span>
-                </label>
               </div>
               <textarea
                 className="data-textarea"
-                placeholder={`Jan\tKowalski\t1000 zł\nAnna\tNowak\t2500 zł\nPiotr\tWiśniewski\t750 zł`}
+                placeholder={`Jan\tKowalski\nAnna\tNowak\nPiotr\tWiśniewski`}
                 value={rawText}
                 onChange={e => setRawText(e.target.value)}
                 spellCheck={false}
@@ -334,16 +259,13 @@ export default function App() {
               {parsed.length > 0 && (
                 <div className="parse-stats">
                   <span className="stat-pill">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                     {dataRows.length} wierszy danych
                   </span>
                   <span className="stat-pill">{colCount} kolumn</span>
-                  {headers.length > 0 && <span className="stat-pill">Nagłówki: {headers.join(', ')}</span>}
                 </div>
               )}
             </div>
 
-            {/* Preview table */}
             {dataRows.length > 0 && (
               <div className="section-card">
                 <h2 className="section-h2">Podgląd danych</h2>
@@ -382,7 +304,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Mapping */}
             <div className="section-card">
               <div className="section-header">
                 <div>
@@ -438,7 +359,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filename config */}
             <div className="section-card filename-card">
               <h2 className="section-h2">Nazwy plików wyjściowych</h2>
               <p className="section-sub" style={{ marginBottom: 12 }}>Każdy plik będzie nazwany wartością wybranego pola</p>
@@ -475,14 +395,6 @@ export default function App() {
         {/* ── GENERATING ── */}
         {phase === 'generating' && (
           <div className="phase-panel center-panel">
-            <div className="gen-spinner">
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                <circle cx="40" cy="40" r="34" stroke="#1e2040" strokeWidth="6"/>
-                <path d="M40 6 A34 34 0 0 1 74 40" stroke="#4f8ef7" strokeWidth="6" strokeLinecap="round">
-                  <animateTransform attributeName="transform" type="rotate" from="0 40 40" to="360 40 40" dur="0.9s" repeatCount="indefinite"/>
-                </path>
-              </svg>
-            </div>
             <h2 className="gen-title">Generowanie…</h2>
             <div className="progress-bar-wrap">
               <div className="progress-bar-track">
@@ -498,24 +410,16 @@ export default function App() {
         {phase === 'done' && (
           <div className="phase-panel">
             <div className="center-panel" style={{ marginBottom: 24 }}>
-              <div className="success-ring">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <circle cx="40" cy="40" r="36" stroke="#4f8ef7" strokeWidth="2" opacity="0.3"/>
-                  <circle cx="40" cy="40" r="28" stroke="#4f8ef7" strokeWidth="2"/>
-                  <path d="M26 40 L35 49 L54 30" stroke="#4f8ef7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
               <h2 className="success-title">ZIP pobrany!</h2>
               <p className="success-sub">
                 Wygenerowano <strong>{generatedCount}</strong> z <strong>{results.length}</strong> dokumentów.
                 {results.some(r => !r.ok) && <> <span style={{ color: 'var(--error)' }}>{results.filter(r => !r.ok).length} błędów.</span></>}
               </p>
               <button className="btn-generate" onClick={handleReset} style={{ marginTop: 20 }}>
-                Generuj ponownie / nowy szablon
+                Generuj ponownie
               </button>
             </div>
 
-            {/* Results log */}
             <div className="section-card">
               <h2 className="section-h2">Log generowania</h2>
               <div className="results-log">
@@ -523,7 +427,7 @@ export default function App() {
                   <div key={r.row} className={`log-row ${r.ok ? 'ok' : 'err'}`}>
                     <span className="log-num">#{r.row}</span>
                     <span className="log-name">{r.name}</span>
-                    <span className="log-status">{r.ok ? '✓ OK' : `✕ ${r.error}`}</span>
+                    <span className="log-status">{r.ok ? 'OK' : `Error ${r.error}`}</span>
                   </div>
                 ))}
               </div>
@@ -531,10 +435,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      <footer className="footer">
-        Działa w 100% lokalnie · Twoje dane nigdy nie opuszczają przeglądarki
-      </footer>
     </div>
   );
 }
