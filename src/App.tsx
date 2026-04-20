@@ -3,7 +3,6 @@ import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import './App.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
